@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { ExplorePromptModel, ExploreResponseModel, UserModel } from "./models.js";
 import { hashPassword, issueToken, requireAuth, verifyPassword } from "./auth.js";
+import { aiRequestSchema, reviewWithGemini } from "./ai.js";
 
 const router = Router();
 const credentials = z.object({ name: z.string().trim().min(2).max(80), email: z.string().trim().toLowerCase().email(), password: z.string().min(8).max(128) });
@@ -25,6 +26,24 @@ router.post("/auth/login", async (request, response, next) => {
     if (!user || !(await verifyPassword(input.password, user.passwordHash))) { response.status(401).json({ error: "invalid_credentials", message: "Invalid email or password." }); return; }
     response.json({ token: issueToken(String(user._id)), user: publicUser(user) });
   } catch (error) { next(error); }
+});
+
+const aiRequests = new Map<string, number[]>();
+router.post("/ai", requireAuth, async (request, response, next) => {
+  try {
+    const parsedInput = aiRequestSchema.safeParse(request.body);
+    if (!parsedInput.success) { response.status(400).json({ error: "validation_error", message: "Prompt must be between 20 and 2000 characters." }); return; }
+    const input = parsedInput.data;
+    const now = Date.now();
+    const recent = (aiRequests.get(request.userId ?? "") ?? []).filter((time) => now - time < 60_000);
+    if (recent.length >= 5) { response.status(429).json({ error: "rate_limited", message: "Please wait before asking for another coaching review." }); return; }
+    aiRequests.set(request.userId ?? "", [...recent, now]);
+    response.json(await reviewWithGemini(input.prompt));
+  } catch (error) {
+    if (error instanceof SyntaxError || (error instanceof Error && error.name === "ZodError")) { response.status(502).json({ error: "ai_invalid_response", message: "The coach returned an unusable response." }); return; }
+    if (error instanceof Error && error.message === "GEMINI_API_KEY is not configured.") { response.status(502).json({ error: "ai_unavailable", message: "Conversation coaching is not configured." }); return; }
+    next(error);
+  }
 });
 
 router.get("/prompts", async (_request, response, next) => { try { response.json(await ExplorePromptModel.find().sort({ createdAt: -1 }).lean()); } catch (error) { next(error); } });

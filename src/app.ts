@@ -5,7 +5,12 @@ import router from "./routes.js";
 export const app = express();
 
 app.use(express.json({ limit: "32kb" }));
-app.use(cors({ origin: true, methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"] }));
+const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
+  .split(",").map((origin) => origin.trim()).filter(Boolean);
+app.use(cors({ origin: (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin)) { callback(null, true); return; }
+  callback(new Error("Origin not allowed by CORS"));
+}, methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Content-Type", "Authorization"] }));
 
 app.get("/api/health", (_request, response) => {
   response.json({ status: "ok", service: "orbit-api" });
