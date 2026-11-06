@@ -9,7 +9,7 @@ const prompts = [
   { question: "What is your ideal comfort meal?", category: "food" },
   { question: "What technology are you most curious about right now?", category: "tech" },
   { question: "What is a belief you changed your mind about?", category: "deep-talks" },
-];
+] as const;
 
 await connectDatabase();
 await ExplorePromptModel.bulkWrite(prompts.map((prompt) => ({ updateOne: { filter: prompt, update: { $set: prompt }, upsert: true } })));
