@@ -5,7 +5,7 @@ import router from "./routes.js";
 export const app = express();
 
 app.use(express.json({ limit: "32kb" }));
-const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
+const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173,https://orbit-mu-lilac.vercel.app")
   .split(",").map((origin) => origin.trim()).filter(Boolean);
 app.use(cors({ origin: (origin, callback) => {
   if (!origin || allowedOrigins.includes(origin)) { callback(null, true); return; }
