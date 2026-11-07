@@ -1,5 +1,7 @@
 # Orbit API
 
+[![CI](https://github.com/sebastianmeer/itelect4-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastianmeer/itelect4-backend/actions/workflows/ci.yml)
+
 Express/TypeScript API for Orbit. The API owns JWT authentication, MongoDB persistence, public Explore prompts, and owner-scoped Explore responses.
 
 The protected `POST /api/ai` route accepts `{ "prompt": string }` with 20–2000
@@ -37,3 +39,16 @@ npm test
 - Authenticated rate-limited `POST /api/ai`
 
 Response CRUD requires `Authorization: Bearer <token>`. Ownership is derived from the verified JWT and never from request input.
+
+## Deployment
+
+Production API: https://orbit-api-weld-tau.vercel.app
+
+The Vercel entrypoint is `api/index.ts`. Set `MONGODB_URI`, `JWT_SECRET`,
+`GEMINI_API_KEY`, and `CORS_ORIGIN` in Vercel environment settings. Never put
+those values in GitHub, `.env.example`, or frontend `VITE_` variables.
+
+Frontend companion: https://github.com/sebastianmeer/itelect4-project
+
+AI-use disclosure: AI tools assisted with implementation, tests, debugging,
+and documentation; the project author reviewed the resulting changes.
